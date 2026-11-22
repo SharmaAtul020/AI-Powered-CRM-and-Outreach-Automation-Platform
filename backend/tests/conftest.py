@@ -34,3 +34,31 @@ def client():
     """Provides a TestClient instance for API tests."""
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def authenticated_user():
+    """Override the current user dependency for role-based API tests."""
+    from backend.app.core.security import get_current_user
+
+    def set_user(user):
+        app.dependency_overrides[get_current_user] = lambda: user
+
+    yield set_user
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture
+def isolated_api_state():
+    """Restore mutable API sample data after each test."""
+    import copy
+    from backend.app.api.v1.suppression import SUPPRESSION_LIST
+    from backend.app.api.v1.error_center import SAMPLE_ERRORS
+
+    original_suppressions = copy.deepcopy(SUPPRESSION_LIST)
+    original_errors = copy.deepcopy(SAMPLE_ERRORS)
+
+    yield
+
+    SUPPRESSION_LIST[:] = original_suppressions
+    SAMPLE_ERRORS[:] = original_errors
