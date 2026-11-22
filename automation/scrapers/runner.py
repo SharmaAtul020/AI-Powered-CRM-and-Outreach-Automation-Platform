@@ -20,6 +20,8 @@ from multiprocessing import Process, Semaphore
 
 from automation.scrapers import registry
 
+import automation.scrapers.sources.college_tpo
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_CONCURRENCY = 2

@@ -1,3 +1,4 @@
+from automation.scrapers.sources.college_tpo import CollegeTPOScraper
 """
 Integration-style tests for automation/scrapers/registry.py (BE-22).
 
@@ -281,14 +282,17 @@ class TestGetScraperClassWithSeedData:
     """
 
     def test_all_enabled_healthy_seed_sources_reach_not_implemented_error(self):
-        """
-        All 7 enabled seed sources pass the DB gate and reach
-        NotImplementedError (because no scraper class is registered yet).
-        """
         for source_id in _ENABLED_SEED_SOURCE_IDS:
             conn = _seed_conn()
-            with pytest.raises(NotImplementedError, match="not been implemented yet"):
-                get_scraper_class(source_id, conn=conn)
+
+            if source_id == "college_tpo":
+                assert get_scraper_class(source_id, conn=conn) is CollegeTPOScraper
+            else:
+                with pytest.raises(
+                    NotImplementedError,
+                    match="not been implemented yet",
+                ):
+                    get_scraper_class(source_id, conn=conn)
 
     def test_disabled_seed_source_rejected_at_db_gate(self):
         """
