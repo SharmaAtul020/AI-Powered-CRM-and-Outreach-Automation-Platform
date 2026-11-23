@@ -41,11 +41,19 @@ def authenticated_user():
     """Override the current user dependency for role-based API tests."""
     from backend.app.core.security import get_current_user
 
+    previous_override = app.dependency_overrides.get(get_current_user)
+    had_previous_override = get_current_user in app.dependency_overrides
+
     def set_user(user):
         app.dependency_overrides[get_current_user] = lambda: user
 
-    yield set_user
-    app.dependency_overrides.pop(get_current_user, None)
+    try:
+        yield set_user
+    finally:
+        if had_previous_override:
+            app.dependency_overrides[get_current_user] = previous_override
+        else:
+            app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.fixture
@@ -58,7 +66,8 @@ def isolated_api_state():
     original_suppressions = copy.deepcopy(SUPPRESSION_LIST)
     original_errors = copy.deepcopy(SAMPLE_ERRORS)
 
-    yield
-
-    SUPPRESSION_LIST[:] = original_suppressions
-    SAMPLE_ERRORS[:] = original_errors
+    try:
+        yield
+    finally:
+        SUPPRESSION_LIST[:] = original_suppressions
+        SAMPLE_ERRORS[:] = original_errors

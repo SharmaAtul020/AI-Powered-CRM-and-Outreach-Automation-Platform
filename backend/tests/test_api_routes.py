@@ -400,3 +400,54 @@ def test_provider_callback_without_event_id(client):
 
     assert response.status_code == 200
     assert response.json()["event_id"] is None
+
+
+
+def test_list_errors_forbidden_for_researcher(client, authenticated_user):
+    authenticated_user(RESEARCHER)
+
+    response = client.get("/api/v1/error_center")
+
+    assert response.status_code == 403
+
+
+def test_replay_error_forbidden_for_researcher(client, authenticated_user):
+    authenticated_user(RESEARCHER)
+
+    response = client.post("/api/v1/error_center/err_001/replay")
+
+    assert response.status_code == 403
+
+
+def test_admin_can_list_errors(client, authenticated_user):
+    authenticated_user(ADMIN)
+
+    response = client.get("/api/v1/error_center")
+
+    assert response.status_code == 200
+
+
+def test_list_errors_requires_authentication(client):
+    response = client.get("/api/v1/error_center")
+
+    assert response.status_code == 403
+
+def test_provider_callback_duplicate_event(client):
+    payload = {"provider_event_id": "event-duplicate-001"}
+
+    first = client.post("/api/v1/callbacks", json=payload)
+    second = client.post("/api/v1/callbacks", json=payload)
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json() == second.json()
+
+
+def test_provider_callback_malformed_payload(client):
+    response = client.post(
+        "/api/v1/callbacks",
+        content="{invalid json",
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 422
